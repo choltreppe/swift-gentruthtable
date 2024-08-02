@@ -2,8 +2,11 @@ import Foundation
 
 let args = CommandLine.arguments
 if args.count == 2 {
-  print(args)
-  print(TruthTable(try Expr(args[1])))
+  do {
+    print(TruthTable(try Expr(args[1])))
+  } catch {
+    print("Error: \(error)")
+  }
 } else {
-  print("expected 'getTruthTable <EXPR>")
+  print("expected 'gentt <EXPR>")
 }

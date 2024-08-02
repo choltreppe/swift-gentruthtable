@@ -1,10 +1,11 @@
 enum BinOp: CustomStringConvertible, CaseIterable {
-  case and, or
+  case and, or, impl
 
   var description: String {
     switch self {
     case .and: "&"
     case .or: "|"
+    case .impl: "->"
     }
   }
 
@@ -12,6 +13,7 @@ enum BinOp: CustomStringConvertible, CaseIterable {
     switch self {
     case .and: 2
     case .or: 1
+    case .impl: 0
     }
   }
 
@@ -19,6 +21,7 @@ enum BinOp: CustomStringConvertible, CaseIterable {
     switch self {
     case .and: lhs && rhs
     case .or: lhs || rhs
+    case .impl: !lhs || rhs
     }
   }
 }
@@ -29,10 +32,18 @@ indirect enum Expr: CustomStringConvertible {
   case not(Expr)
   case binExpr(op: BinOp, lhs: Expr, rhs: Expr)
 
-  enum SyntaxError: Error {
+  enum SyntaxError: Error, CustomStringConvertible {
     case unexpectedNumber(Int)
     case unexpectedCharacter(Character)
     case unexpectedEOF
+
+    var description: String {
+      switch self {
+      case .unexpectedNumber(let n): "unexpected number \(n)"
+      case .unexpectedCharacter(let c): "unexpected '\(c)'"
+      case .unexpectedEOF: "unexpected EOF"
+      }
+    }
   }
 
   init(_ code: String) throws {
@@ -60,6 +71,7 @@ indirect enum Expr: CustomStringConvertible {
         return (try parseBinary()).0
       }
       else if code.trySkip("!", at: &pos) {
+        code.skipWhitespace(at: &pos)
         return .not(try parseUnary())
       }
       else {
@@ -99,16 +111,23 @@ indirect enum Expr: CustomStringConvertible {
   }
 
   var description: String {
-    switch self {
-    case let .variable(name): name
-    case let .value(v): switch v {
-        case true: "1"
-        case false: "0"
+    func buildStr(_ expr: Self, _ parentPrec: Int = 0) -> String {
+      switch expr {
+      case let .variable(name): return name
+      case let .value(v): return switch v {
+          case true: "1"
+          case false: "0"
+        }
+      case let .not(inner): return "!" + buildStr(inner, Int.max)
+      case let .binExpr(op, lhs, rhs):
+        let p = op.precedence
+        let s = "\(buildStr(lhs, p)) \(op) \(buildStr(rhs, p))"
+        return
+          if p < parentPrec {"(\(s))"}
+          else {s}
       }
-    case let .not(inner): "!" + inner.description
-    case let .binExpr(op, lhs, rhs):
-      "(\(lhs) \(op) \(rhs))"
     }
+    return buildStr(self)
   }
 
   var vars: [String] {
@@ -124,7 +143,7 @@ indirect enum Expr: CustomStringConvertible {
     switch self {
     case let .variable(name): vals[name]!
     case let .value(v): v
-    case let .not(inner): inner.compute(vals)
+    case let .not(inner): !inner.compute(vals)
     case let .binExpr(op, lhs, rhs):
       op.compute(
         lhs.compute(vals),

@@ -1,8 +1,10 @@
 struct TruthTable: CustomStringConvertible {
   var vars: [String]
   var results: [Bool]
+  var resultTitle: String
 
   init(_ expr: Expr) {
+    resultTitle = expr.description
     vars = expr.vars
     var vals: [String: Bool] = [:]
     results = []
@@ -33,6 +35,7 @@ struct TruthTable: CustomStringConvertible {
     for (i, name) in vars.enumerated() {
       columnWidths.append(addCell(content: name, isFirst: i == 0))
     }
+    columnWidths.append(addCell(content: resultTitle))
     let rowSep = String(
       repeating: "-",
       count: columnWidths.reduce(0, +) + columnWidths.count*3 - 1
