@@ -5,12 +5,12 @@ struct TruthTable: CustomStringConvertible {
 
   init(_ expr: Expr) {
     resultTitle = expr.description
-    vars = expr.vars
+    vars = Array(expr.vars).sorted()
     var vals: [String: Bool] = [:]
     results = []
-    func computeResults(_ pos: Int) {
+    func computeResults(_ pos: Int = 0) {
       if pos < vars.count {
-        for val in [true, false] {
+        for val in [false, true] {
           vals[vars[pos]] = val
           computeResults(pos + 1)
         }
@@ -19,7 +19,7 @@ struct TruthTable: CustomStringConvertible {
         results.append(expr.compute(vals))
       }
     }
-    computeResults(0)
+    computeResults()
   }
 
   var description: String {
@@ -46,7 +46,7 @@ struct TruthTable: CustomStringConvertible {
       for i in 0 ..< vars.count {
         _ = addCell(
           content:
-            (row&(1<<(vars.count-i-1)) == 0 ? "1" : "0") +
+            (row&(1<<(vars.count-i-1)) == 0 ? "0" : "1") +
             String(repeating: " ", count: columnWidths[i] - 1),
           isFirst:
             i == 0

@@ -70,7 +70,7 @@ indirect enum Expr: CustomStringConvertible {
       else if code.trySkip("(", at: &pos) {
         return (try parseBinary()).0
       }
-      else if code.trySkip("!", at: &pos) {
+      else if code.trySkip("~", at: &pos) {
         code.skipWhitespace(at: &pos)
         return .not(try parseUnary())
       }
@@ -79,7 +79,7 @@ indirect enum Expr: CustomStringConvertible {
         if name.isEmpty {
           throw unexpectedCharacterError()
         }
-        return .variable(name)
+        return .variable(name + code.parseWhile(oneOf: "0"..."9", at: &pos))
       }
     }
 
@@ -118,7 +118,7 @@ indirect enum Expr: CustomStringConvertible {
           case true: "1"
           case false: "0"
         }
-      case let .not(inner): return "!" + buildStr(inner, Int.max)
+      case let .not(inner): return "~" + buildStr(inner, Int.max)
       case let .binExpr(op, lhs, rhs):
         let p = op.precedence
         let s = "\(buildStr(lhs, p)) \(op) \(buildStr(rhs, p))"
@@ -130,12 +130,12 @@ indirect enum Expr: CustomStringConvertible {
     return buildStr(self)
   }
 
-  var vars: [String] {
+  var vars: Set<String> {
     switch self {
     case let .variable(name): [name]
     case .value: []
     case let .not(inner): inner.vars
-    case let .binExpr(_, lhs, rhs): lhs.vars + rhs.vars
+    case let .binExpr(_, lhs, rhs): lhs.vars.union(rhs.vars)
     }
   }
 
