@@ -1,5 +1,3 @@
-import Foundation
-
 let args = CommandLine.arguments
 if args.count == 2 {
   do {
